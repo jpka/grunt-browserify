@@ -14,9 +14,10 @@ var browserify = require('browserify');
 module.exports = function (grunt) {
   grunt.registerMultiTask('browserify', 'Grunt task for browserify.', function () {
     var done = this.async();
+    var options = this.options();
 
-    var files = this.filesSrc.map(function (file) {
-      return path.resolve(file);
+    var files = grunt.file.expandMapping(options.src, options.dest, {cwd: process.cwd()}).map(function (file) {
+      return path.resolve(file.src[0]);
     });
 
     var b = browserify(files);
@@ -24,16 +25,16 @@ module.exports = function (grunt) {
       grunt.fail.warn(err);
     });
 
-    if (this.data.ignore) {
-      grunt.file.expand({filter: 'isFile'}, this.data.ignore)
+    if (options.ignore) {
+      grunt.file.expand({filter: 'isFile'}, options.ignore)
         .forEach(function (file) {
 
           b.ignore(path.resolve(file));
         });
     }
 
-    if (this.data.alias) {
-      var aliases = this.data.alias;
+    if (options.alias) {
+      var aliases = options.alias;
       if (aliases.split) {
         aliases = aliases.split(',');
       }
@@ -47,17 +48,21 @@ module.exports = function (grunt) {
       });
     }
 
-    if (this.data.external) {
-      grunt.file.expand({filter: 'isFile'}, this.data.external)
+    if (options.external) {
+      grunt.file.expand({filter: 'isFile'}, options.external)
         .forEach(function (file) {
           b.external(path.resolve(file));
         });
     }
 
-    if (this.data.transform) {
-      this.data.transform.forEach(function (transform) {
+    if (options.transform) {
+      options.transform.forEach(function (transform) {
         b.transform(transform);
       });
+    }
+
+    if (options.beforeHook) {
+      options.beforeHook.call(this, b);
     }
 
     var opts = grunt.util._.extend(this.data.options, {});
@@ -66,13 +71,13 @@ module.exports = function (grunt) {
       grunt.fail.warn(err);
     });
 
-    var destPath = path.dirname(path.resolve(this.data.dest));
+    var destPath = path.dirname(path.resolve(options.dest));
     if (!fs.existsSync(destPath)) {
       fs.mkdirSync(destPath);
     }
 
     bundle
-      .pipe(fs.createWriteStream(this.data.dest))
+      .pipe(fs.createWriteStream(options.dest))
       .on('finish', done);
   });
 };
