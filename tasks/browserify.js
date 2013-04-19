@@ -14,7 +14,7 @@ var browserify = require('browserify');
 module.exports = function (grunt) {
   grunt.registerMultiTask('browserify', 'Grunt task for browserify.', function () {
     var done = this.async();
-    var options = this.options();
+    var options = grunt.util._.extend(this.options(), this.data);
 
     var files = grunt.file.expandMapping(options.src, options.dest, {cwd: process.cwd()}).map(function (file) {
       return path.resolve(file.src[0]);
